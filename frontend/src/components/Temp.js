@@ -9,7 +9,6 @@ const Home = () => {
     const [progress, setProgress] = useState([]);
     const [complete, setComplete] = useState(false);
     const [downloadUrl, setDownloadUrl] = useState("");
-    const [comp, setComp] = useState(false)
 
     useEffect(() => {
         socket.on("progress_update", (data) => {
@@ -18,15 +17,7 @@ const Home = () => {
 
         socket.on("process_complete", (data) => {
             setComplete(true);
-            if(data.url != "nothing"){
-                setDownloadUrl(data.url)
-                setComp(true)
-            }
-            else{
-                setDownloadUrl("")
-                setComp(false)
-            }
-        
+            setDownloadUrl(data.url);
         });
 
         return () => {
@@ -62,19 +53,13 @@ const Home = () => {
 
     return (
         <div className="container">
-            <h1 className="header">Audio Censoring Process</h1>
             <div className="card">
-                <label htmlFor="file-upload" className="file-label">
-                    Choose Audio File
-                </label>
                 <input 
-                    id="file-upload"
                     type="file" 
                     accept="audio/mp3" 
                     onChange={handleFileChange} 
                     className="file-input"
                 />
-                {audio && <p className="file-name">📂 {audio.name}</p>}
                 <button 
                     onClick={handleUpload} 
                     className="upload-button"
@@ -85,20 +70,10 @@ const Home = () => {
                 {progress.map((msg, index) => (
                     <p key={index} className="message">{msg}</p>
                 ))}
-    
-                {comp && 
-                <>
-                
-                <audio controls className="audio-player">
-                    <source src={"http://127.0.0.1:5000/download_audio"} type="audio/mp3" />
-                    Your browser does not support the audio element.
-                </audio>
-
+                {complete && 
                 <button onClick={handleDownloadClick} className="download-button">
                     Download Censored Audio
-                </button>
-                </>}
-                
+                </button>}
             </div>
         </div>
     );

@@ -1,7 +1,8 @@
+/* 🌌 Background Styling */
 body {
-    background-color: #121212;
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
     color: white;
-    font-family: Arial, sans-serif;
+    font-family: 'Poppins', sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -9,6 +10,7 @@ body {
     margin: 0;
 }
 
+/* 🔲 Main Container */
 .container {
     display: flex;
     flex-direction: column;
@@ -17,46 +19,119 @@ body {
     width: 100%;
 }
 
+/* 🎭 Glassmorphism Card */
 .card {
-    background: #1e1e1e;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0px 4px 10px rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0px 5px 15px rgba(255, 255, 255, 0.15);
     text-align: center;
-    width: 320px;
+    width: 350px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+/* 🎵 File Upload Section */
 .file-input {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #444;
-    border-radius: 8px;
-    background: #222;
-    color: white;
-    cursor: pointer;
-    margin-bottom: 15px;
+    display: none; /* Hide default file input */
 }
 
+/* 🎤 Custom File Upload Button */
+.file-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #ff416c, #ff4b2b);
+    color: white;
+    padding: 12px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    width: 100%;
+}
+
+.file-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;  /* Ensure it matches container width */
+    box-sizing: border-box;
+    text-align: center;
+    border-radius: 8px;
+    padding: 12px 20px;
+}
+
+.file-label:hover {
+    background: linear-gradient(135deg, #ff4b2b, #ff416c);
+    transform: scale(1.05);
+}
+
+/* 📂 File Name Display */
+.file-name {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #ddd;
+}
+
+/* ⬆ Upload Button */
 .upload-button {
-    background: #007bff;
+    background: linear-gradient(135deg, #00c6ff, #0072ff);
     color: white;
     border: none;
-    padding: 10px 15px;
+    padding: 12px 15px;
     border-radius: 8px;
     cursor: pointer;
     font-size: 16px;
     width: 100%;
-    transition: background 0.3s;
+    font-weight: 600;
+    transition: all 0.3s;
+    margin-top: 15px;
 }
 
 .upload-button:hover {
-    background: #0056b3;
+    background: linear-gradient(135deg, #0072ff, #00c6ff);
+    transform: scale(1.05);
 }
 
-.audio-container {
-    margin-top: 20px;
+/* 🔄 Processing Messages */
+.message {
+    font-size: 14px;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 8px;
+    border-radius: 5px;
+    margin: 8px 0;
+    color: #fff;
 }
 
+/* ⬇ Download Button */
+.download-button {
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    color: white;
+    border: none;
+    padding: 12px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    width: 100%;
+    font-weight: 600;
+    transition: all 0.3s;
+    margin-top: 15px;
+}
+
+.download-button:hover {
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+    transform: scale(1.05);
+}
+
+/* 🎧 Audio Player */
 audio {
     width: 100%;
+    margin-top: 15px;
+    border-radius: 8px;
+    outline: none;
+}
+
+.audio-player {
+    width: 100%;
+    margin-top: 10px;
 }

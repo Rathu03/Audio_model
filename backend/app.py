@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import os
 import librosa
@@ -187,7 +187,7 @@ def generate_spellings(word, vocab_list, max_depth=5):
         "ch": ["sh", "s"], "ph": ["f"], "j": ["z", "y"], "cho": ["sho", "so"], "chu": ["shu"], "koa": ["go"], "ko": ["go"], "bi": ["pi"],
         "che": ["she"], "ji": ["zi"], "jo": ["zo"], "ku": ["gu"], "kha": ["ka"], "ghe": ["ge"], "vai": ["vi"], "cha": ["sa"], "ga": [""], "aa": ['a']
     }
-
+ 
     def modify_and_check(word):
         """Generate modified versions and check if they exist in vocab_list."""
         word_parts = [[char] if char not in phonetic_mappings else [char] + phonetic_mappings[char] for char in word]
@@ -293,8 +293,10 @@ app = Flask(__name__)
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-UPLOAD_FOLDER = './uploads'
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)  
+UPLOAD_FOLDER = "uploads"
+PROCESSED_FOLDER = "Censored_audio"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(PROCESSED_FOLDER, exist_ok=True)
 
 @socketio.on("upload_audio")
 def handle_audio(data):
@@ -376,14 +378,27 @@ def handle_audio(data):
     print("Timestamps: ",t_stamps)
     if(len(hate) == 0):
         print("No hate speech detected")
+        socketio.emit("progress_update", {"message": f"No hate speech found..No Censors done"})
+        socketio.emit("process_complete", {"message": "Processing complete!","url":"nothing"}) 
     else:
         print("Hate speech detected")
 
         beep(input_audio_path,t_stamps)
         socketio.emit("progress_update", {"message": f"Censoring done successfully"})
+        
+        processed_audio_path = os.path.join(PROCESSED_FOLDER,"audio_censored.mp3")
+        socketio.emit("process_complete", {"message": "Processing complete!","url": "/download_audio"}) 
 
     #return jsonify({"message": "Successfully uploaded"}), 200
 
+@app.route("/download_audio")
+def download_audio():
+    processed_audio_path = os.path.join(PROCESSED_FOLDER, "audio_censored.mp3")
+    
+    if os.path.exists(processed_audio_path):
+        return send_file(processed_audio_path, as_attachment=True)
+    else:
+        return {"error": "Processed audio not found"}, 404
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, port=5000)
