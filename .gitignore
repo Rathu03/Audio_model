@@ -23,6 +23,9 @@ venv/
 Audio/
 Censored_audio/
 Cleaned_audio/
+Video_model/Inputs/
+Video_model/Outputs/
+Video_model/Yolo_models/
 
 # Ignore compiled files
 *.so
