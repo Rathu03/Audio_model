@@ -10,12 +10,12 @@ Tamil Texts ---> Tamil tokenizer, Tanglish tokenizer, facebook/m2m100_418M ---> 
 facebook/m2m100_418M --> trained on custom dataset (tamil and tanglish song dataset)
 mapped tamil texts with tanglish texts and passed to the m2m model and finetuned that model
 
-Tanglish texts --> Trim repeating characters, remove suffix, with using vocab list ---> Modify Tanglish texts
+Tanglish texts ---> Trim repeating characters, remove suffix, with using vocab list ---> Modify Tanglish texts
 
 Tanglish texts ---> bilstm model ---> Output1 (label,confidence)
 Tanglish texts ---> ai4bharat/indic-bert ---> Output2 (label, confidence)
 finetuned bilstm and ai4bharat/indic-bert with the (tanglish text and its label)
 
-Output1, Output2 ---> Sequential model (neural network) --> Final Output (label, confidence)
+Output1, Output2 ---> Sequential model (neural network) ---> Final Output (label, confidence)
 
 if the final output is hate, then the tanglish word timestamp will be beeped in the original audio
