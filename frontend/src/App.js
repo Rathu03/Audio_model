@@ -1,12 +1,13 @@
-import Home from "./components/Home";
-import Temp from "./components/Temp";
+import AudioUploader from "./components/AudioUploader";
+import VideoUploader from "./components/VideoUploader";
+import "./styles/Main.css";
 
-function App() {
-  return (
-    <div>
-      <Home />
-    </div>
-  );
+const App = () => {
+    return (
+        <div>
+          <AudioUploader />
+        </div>
+    );
 }
 
 export default App;
