@@ -42,7 +42,7 @@ const AudioUploader = () => {
     const handleUpload = async () => {
         if (!audio) return;
 
-        setProgress([]); // Reset progress
+        setProgress([]); 
         setComplete(false);
         setDownloadUrl("")
 

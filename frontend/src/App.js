@@ -4,9 +4,10 @@ import "./styles/Main.css";
 
 const App = () => {
     return (
-        <div>
-          <AudioUploader />
-        </div>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: "80px" }}>
+        <AudioUploader />
+        <VideoUploader />
+    </div>
     );
 }
 

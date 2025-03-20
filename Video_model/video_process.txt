@@ -1,0 +1,42 @@
+BEGIN
+1. Initialize Model and Video:
+    - Load YOLOv8 model with pre-trained weights.
+    - Open the input video using OpenCV.
+    - Check if the video opens successfully.
+    - Retrieve video properties:
+        - FPS
+        - Frame dimensions (width, height)
+2. Set Desired FPS:
+    - Define the desired FPS (e.g., 10 FPS).
+    - Calculate the frame interval:
+        → frame_interval = original_fps / desired_fps
+3. Frame Processing Loop:
+    WHILE video is open:
+        - Read the current frame.
+        - IF frame is invalid:
+            → BREAK the loop.
+        - IF frame_count % frame_interval ≠ 0:
+            → SKIP to the next frame.
+        - ELSE:
+            - Resize the frame to 640x640.
+            - Perform inference using YOLOv8.
+            - Retrieve detected objects:
+                → Bounding boxes, labels, confidence scores.      
+4. Timestamp Generation:
+    - Calculate the timestamp:
+        → timestamp_seconds = frame_count / fps
+    - Convert to HH:MM:SS.milliseconds format.
+    - Display the timestamp on the frame.
+5. Draw Bounding Boxes:
+    FOR each detected object:
+        - Extract bounding box coordinates.
+        - Draw the bounding box on the frame.
+        - Display the coordinates near the box.
+6. Display the Frame:
+    - Convert the frame to RGB.
+    - Display the frame with bounding boxes and timestamp.
+7. Cleanup:
+    - Release video resources.
+    - Close all OpenCV windows.
+END
+

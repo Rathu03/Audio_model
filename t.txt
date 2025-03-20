@@ -1,0 +1,15 @@
+Audio Cleaned Successfully
+Translated audio to tamil texts successfully
+
+என்னைப் ennaip
+பார்த்தால் paarthaal
+லூசு loosu
+மாதிரி maadhiri
+இருக்கா, irukkaa
+Translated tamil to tanglish text successfully
+[['ennaip', 0.0, 1.22], ['paarthaal', 1.22, 1.56], ['loosu', 1.56, 1.92], ['maadhiri', 1.92, 2.32], ['irukkaa,', 2.32, 2.72]]
+
+Hate:  ['loosu']
+Timestamps:  [[1.56, 1.92]]
+Hate speech detected
+Beeped audio saved as ./Censored_audio/audio_censored.mp3

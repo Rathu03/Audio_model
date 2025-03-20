@@ -135,3 +135,58 @@ audio {
     width: 100%;
     margin-top: 10px;
 }
+
+/* Wrapper for scrolling effect */
+.table-wrapper {
+    max-height: 350px;         /* Display ~7 records */
+    overflow-y: auto;           /* Vertical scroll */
+    border: 1px solid #4a90e2;  /* Border color */
+    border-radius: 8px;         /* Rounded corners */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); 
+    background: #0a1f44;        /* Dark blue background */
+}
+
+/* Styling for the table */
+.detection-table {
+    width: 100%;
+    border-collapse: collapse;
+    color: #ffffff;             /* White text */
+}
+
+/* Sticky header */
+.detection-table thead th {
+    position: sticky;
+    top: 0;
+    background: #1e3a8a;        /* Deep blue header */
+    color: #ffffff;             /* White header text */
+    z-index: 1;
+    padding: 12px;
+    text-align: left;
+    font-weight: bold;
+}
+
+/* Table cells */
+.detection-table th, .detection-table td {
+    padding: 14px;
+    border-bottom: 1px solid #4a90e2; /* Border color */
+}
+
+/* Hover effect */
+.detection-table tbody tr:hover {
+    background-color: #1e3a8a; /* Deep blue hover */
+    color: #f1f1f1;            /* Lighter text on hover */
+}
+
+/* Scrollbar customization */
+.table-wrapper::-webkit-scrollbar {
+    width: 8px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb {
+    background: #4a90e2;        /* Scrollbar thumb color */
+    border-radius: 10px;
+}
+
+.table-wrapper::-webkit-scrollbar-track {
+    background: #0a1f44;        /* Scrollbar track color */
+}
