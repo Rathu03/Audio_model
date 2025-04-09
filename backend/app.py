@@ -375,10 +375,13 @@ def handle_audio(data):
         bilstm_label = np.argmax(predictions,axis=1)[0]
         bilstm_conf = round(np.max(predictions),2)
 
+        print(f"Text: {tan_texts[t]} Bilstm Label: {bilstm_label} Bilstm Confidence: {bilstm_conf}")
 
         result = predict_hate_speech(tan_texts[t],c_model,c_tokenizer,dev1)
         bert_label = result["prediction"]
         bert_conf = round(result["confidence"],2)
+        print(f"Text: {tan_texts[t]} indic-BERT Label: {bert_label} indic-BERT Confidence: {bilstm_conf}")
+        print("\n")
 
         predicted_category = predict_category1(bilstm_label,bilstm_conf,bert_label,bert_conf)
 
