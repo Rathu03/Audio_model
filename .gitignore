@@ -23,6 +23,7 @@ venv/
 Audio/
 Censored_audio/
 Cleaned_audio/
+Extracted_Audio/
 Video_model/Inputs/
 Video_model/Outputs/
 Video_model/Yolo_models/
