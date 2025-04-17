@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 
 const socket = io('http://127.0.0.1:5000');
 
-const VideoUploader = () => {
+const AudioVideo = () => {
     const [video, setVideo] = useState(null);
     const [progress, setProgress] = useState([]);
     const [detections, setDetections] = useState([]);
@@ -47,7 +47,7 @@ const VideoUploader = () => {
         const reader = new FileReader();
         reader.readAsArrayBuffer(video);
         reader.onload = () => {
-            socket.emit('upload_video_file', { video: reader.result });
+            socket.emit('upload_audio_video', { video: reader.result });
         };
     };
 
@@ -56,7 +56,7 @@ const VideoUploader = () => {
             {/* <h1 className='header'>Video Censoring Process</h1> */}
             {detections.length === 0 && (
                 <div className='card'>
-                    <h1 style={{ marginBottom: '30px' }}>🎥 Video Moderation</h1>
+                    <h1 style={{ marginBottom: '30px' }}>🔊🎥 Audio & Video Moderation</h1>
                     <label htmlFor='file-upload-video' className='file-label'>
                         Choose Video File
                     </label>
@@ -75,52 +75,12 @@ const VideoUploader = () => {
                 </div>
             )}
 
-            {progress.map((msg, index) => (
-                <p key={index} className='message'>{msg}</p>
-            ))}
-
-            {detections.length > 0 && (
-                <div className="detections">
-                    <h3>Filtered Detections:</h3>
-
-                    {/* Wrapper with scrolling */}
-                    <div className="table-wrapper">
-                        <table className="detection-table">
-                            <thead>
-                                <tr>
-                                    <th>Model</th>
-                                    <th>Timestamp</th>
-                                    <th>Class</th>
-                                    <th>X1</th>
-                                    <th>Y1</th>
-                                    <th>X2</th>
-                                    <th>Y2</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {detections.map((detection, index) => (
-                                    <tr key={index}>
-                                        <td>{detection.model}</td>
-                                        <td>{detection.timestamp}</td>
-                                        <td>{detection.class}</td>
-                                        <td>{detection.x1}</td>
-                                        <td>{detection.y1}</td>
-                                        <td>{detection.x2}</td>
-                                        <td>{detection.y2}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            )}
-
             <button className="download-button" onClick={() => navigate("../")} style={{width:"13%",marginLeft:"80%"}}>
                 Back
             </button>
 
         </div>
     );
-};
+}
 
-export default VideoUploader;
+export default AudioVideo

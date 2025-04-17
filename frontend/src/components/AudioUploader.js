@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 import "../styles/Main.css";
+import { useNavigate } from "react-router-dom";
 
 const socket = io("http://127.0.0.1:5000"); // Connect to Flask backend
 
@@ -10,6 +11,8 @@ const AudioUploader = () => {
     const [complete, setComplete] = useState(false);
     const [downloadUrl, setDownloadUrl] = useState("");
     const [comp, setComp] = useState(false)
+
+    const navigate = useNavigate();
 
     useEffect(() => {
         socket.on("progress_update", (data) => {
@@ -62,8 +65,9 @@ const AudioUploader = () => {
 
     return (
         <div className="container">
-            <h1 className="header">Audio Censoring Process</h1>
+            {/* <h1 className="header">Audio Censoring Process</h1> */}
             <div className="card">
+                <h1 style={{ marginBottom: '30px' }}>🎧 Audio Moderation</h1>
                 <label htmlFor="file-upload" className="file-label">
                     Choose Audio File
                 </label>
@@ -100,6 +104,10 @@ const AudioUploader = () => {
                 </>}
                 
             </div>
+            <button className="download-button" onClick={() => navigate("../")} style={{width:"13%",marginLeft:"80%"}}>
+                Back
+            </button>
+            
         </div>
     );
 }

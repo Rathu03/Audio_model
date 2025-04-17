@@ -1,13 +1,22 @@
 import AudioUploader from "./components/AudioUploader";
+import AudioVideo from "./components/AudioVideo";
+import Home from "./components/Home";
 import VideoUploader from "./components/VideoUploader";
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import "./styles/Main.css";
 
 const App = () => {
     return (
       <div style={{ display: "flex", justifyContent: "space-between", gap: "80px" }}>
-        <AudioUploader />
-        <VideoUploader />
-    </div>
+          <Router>
+            <Routes>
+              <Route path="/" element={<Home />}/>
+              <Route path="/audio" element={<AudioUploader />}/>
+              <Route path="/video" element={<VideoUploader />}/>
+              <Route path="/audiovideo" element={<AudioVideo />}/>
+            </Routes>
+          </Router>  
+      </div>
     );
 }
 

@@ -27,6 +27,7 @@ from flask_socketio import SocketIO
 import time
 import cv2
 from ultralytics import YOLO
+import tempfile
 
 def highpass_filter(y, sr, cutoff=100):
     nyquist = 0.5 * sr
@@ -319,17 +320,6 @@ def handle_audio(data):
         f.write(audio_file)
     socketio.emit("progress_update", {"message": f"Audio uploaded successfully"})
 
-    # if 'file' not in request.files:
-    #     return jsonify({"message": "No file part"}), 400
-    
-    # file = request.files['file']
-    
-    # if file.filename == '':
-    #     return jsonify({"message": "No selected file"}), 400
-
-    # file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
-    # file.save(file_path)
-
     input_audio_path = "uploads/audio.mp3"
     
     clean_audio = preprocess_audio(input_audio_path)
@@ -511,6 +501,128 @@ def process_video(video_path):
     # Return filtered detections
     print(filtered_detections)
     return filtered_detections
+
+def extract_audio(video_path, output_audio_path):
+    temp_wav = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
+
+    cap = cv2.VideoCapture(video_path)
+
+    audio = AudioSegment.from_file(video_path)
+    audio.export(temp_wav.name, format="wav")
+
+    final_audio = AudioSegment.from_wav(temp_wav.name)
+    final_audio.export(output_audio_path, format="mp3")
+
+    temp_wav.close()
+    os.unlink(temp_wav.name)
+    cap.release()
+    print(f"Audio extracted to {output_audio_path}")
+
+@socketio.on("upload_audio_video")
+def handle_audio_video(data):
+    video_path = ""
+    try:
+        print("Video upload received!")
+        video_bytes = np.frombuffer(data["video"], dtype=np.uint8)
+        video_path = os.path.join(UPLOAD_FOLDER1, "uploaded_video.mp4")
+
+        with open(video_path, "wb") as f:
+            f.write(video_bytes)
+        print(f"Video saved at: {video_path}")
+
+        # filtered = process_video(video_path)
+
+        # socketio.emit("video_process_complete", {
+        #     "message": "Video processing complete!",
+        #     "detections": filtered
+        # })
+
+    except Exception as e:
+        print(f"Error processing video: {e}")
+        socketio.emit("error", {"message": f"Error: {str(e)}"})
+
+    extract_audio(video_path,os.path.join(UPLOAD_FOLDER,"audio.mp3"))
+
+    # audio_file = data["audio"]
+    # audio_path = os.path.join(UPLOAD_FOLDER,"audio.mp3")
+    # with open(audio_path,"wb") as f:
+    #     f.write(audio_file)
+    # socketio.emit("progress_update", {"message": f"Audio uploaded successfully"})
+
+    input_audio_path = "uploads/audio.mp3"
+    
+    clean_audio = preprocess_audio(input_audio_path)
+    socketio.emit("progress_update", {"message": f"Audio Cleaned successfully"})
+
+    result = transcribe_audio(clean_audio)
+    socketio.emit("progress_update", {"message": f"Audio to tamil texts converted successfully"})
+    socketio.emit("progress_update", {"message": f"Converted tamil to tanglish text successfully"})
+    socketio.emit("progress_update", {"message": f"Censoring process"})
+    print(result)
+    tan_texts = []
+    timestamps = []
+
+    for i in result:
+        stamp = []
+        st_time = i[1]
+        en_time = i[2]
+        t = i[0]
+        tan = preprocess_text(t)
+        #print("preprocess: ",tan)
+        tan = trim_repeated_letters(tan)
+        tan = remove_suffix(tan)
+        #print("Before text: ",tan)
+        if tan not in vocab_list:
+            tan = generate_spellings(tan,vocab_list)
+        tan_texts.append(tan)
+
+        stamp.append(st_time)
+        stamp.append(en_time)
+        timestamps.append(stamp)
+    
+    hate = []
+    t_stamps = []
+    for t in range(len(tan_texts)):
+
+        test_text = [tan_texts[t]]
+        cleaned = [preprocess_text(text) for text in test_text]
+        tokenized = tokenizer.tokenizer(cleaned)
+        encoded = [tokenizer.sp.PieceToId(piece) for text in tokenized for piece in text]
+        padded = pad_sequences([encoded],maxlen=70,padding="post")
+
+        predictions = bilstm_model.predict(padded)
+        bilstm_label = np.argmax(predictions,axis=1)[0]
+        bilstm_conf = round(np.max(predictions),2)
+
+        print(f"Text: {tan_texts[t]} Bilstm Label: {bilstm_label} Bilstm Confidence: {bilstm_conf}")
+
+        result = predict_hate_speech(tan_texts[t],c_model,c_tokenizer,dev1)
+        bert_label = result["prediction"]
+        bert_conf = round(result["confidence"],2)
+        print(f"Text: {tan_texts[t]} indic-BERT Label: {bert_label} indic-BERT Confidence: {bilstm_conf}")
+        print("\n")
+
+        predicted_category = predict_category1(bilstm_label,bilstm_conf,bert_label,bert_conf)
+
+        if(predicted_category == 1):
+            hate.append(tan_texts[t])
+            t_stamps.append(timestamps[t])
+    
+    print("\n")
+    print("Hate: ",hate)
+    print("Timestamps: ",t_stamps)
+    if(len(hate) == 0):
+        print("No hate speech detected")
+        socketio.emit("progress_update", {"message": f"No hate speech found..No Censors done"})
+        socketio.emit("process_complete", {"message": "Processing complete!","url":"nothing"}) 
+    else:
+        print("Hate speech detected")
+
+        beep(input_audio_path,t_stamps)
+        socketio.emit("progress_update", {"message": f"Censoring done successfully"})
+        
+        processed_audio_path = os.path.join(PROCESSED_FOLDER,"audio_censored.mp3")
+        socketio.emit("process_complete", {"message": "Processing complete!","url": "/download_audio"}) 
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, port=5000)
