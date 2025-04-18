@@ -10,13 +10,16 @@ const VideoUploader = () => {
     const [video, setVideo] = useState(null);
     const [progress, setProgress] = useState([]);
     const [detections, setDetections] = useState([]);
-
+    const [downloadUrl,setDownloadUrl] = useState("")
+    const [comp,setComp] = useState(false)
     const navigate = useNavigate()
 
     useEffect(() => {
         socket.on('video_process_complete', (data) => {
             setProgress((prev) => [...prev, data.message]);
             setDetections(data.detections);
+            setDownloadUrl(data.url)
+            setComp(true)
         });
 
         socket.on('error', (data) => {
@@ -112,12 +115,27 @@ const VideoUploader = () => {
                             </tbody>
                         </table>
                     </div>
+                    <video controls className="video-player" style={{marginTop:"20px"}} width="640" height="360">
+                        <source src={"http://127.0.0.1:5000/download_video"} type="video/mp4" />
+                        Your browser does not support the video tag.
+                    </video>
+
                 </div>
+
+                
+
             )}
 
-            <button className="download-button" onClick={() => navigate("../")} style={{width:"13%",marginLeft:"80%"}}>
-                Back
-            </button>
+
+
+            <div style={{display:"flex"}}>
+                <button className="download-button" onClick={() => window.location.reload()} style={{width:"60%",marginLeft:"100%",textAlign:"center"}}>
+                    Refresh
+                </button>
+                <button className="download-button" onClick={() => navigate("../")} style={{width:"50%",marginLeft:"30%"}}>
+                    Back
+                </button>
+            </div>
 
         </div>
     );

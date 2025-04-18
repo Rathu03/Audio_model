@@ -75,9 +75,14 @@ const AudioVideo = () => {
                 </div>
             )}
 
-            <button className="download-button" onClick={() => navigate("../")} style={{width:"13%",marginLeft:"80%"}}>
-                Back
-            </button>
+            <div style={{display:"flex"}}>
+                <button className="download-button" onClick={() => window.location.reload()} style={{width:"60%",marginLeft:"100%",textAlign:"center"}}>
+                    Refresh
+                </button>
+                <button className="download-button" onClick={() => navigate("../")} style={{width:"50%",marginLeft:"30%"}}>
+                    Back
+                </button>
+            </div>
 
         </div>
     );

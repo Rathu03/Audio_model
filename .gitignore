@@ -22,6 +22,7 @@ env/
 venv/ 
 Audio/
 Censored_audio/
+Censored_video/
 Cleaned_audio/
 Extracted_Audio/
 Video_model/Inputs/

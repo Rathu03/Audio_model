@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, abort, Response
 from flask_cors import CORS
 import os
 import librosa
@@ -28,6 +28,7 @@ import time
 import cv2
 from ultralytics import YOLO
 import tempfile
+import subprocess
 
 def highpass_filter(y, sr, cutoff=100):
     nyquist = 0.5 * sr
@@ -306,7 +307,8 @@ models = {
 
 UPLOAD_FOLDER1 = "uploads1"
 os.makedirs(UPLOAD_FOLDER1, exist_ok=True)
-
+PROCESSED_FOLDER1 = "Censored_video"
+os.makedirs(PROCESSED_FOLDER1,exist_ok=True)
 UPLOAD_FOLDER = "uploads"
 PROCESSED_FOLDER = "Censored_audio"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -405,6 +407,28 @@ def download_audio():
         return send_file(processed_audio_path, as_attachment=True)
     else:
         return {"error": "Processed audio not found"}, 404
+    
+@app.route("/download_video")
+def download_video():
+    original_video_path = os.path.join(PROCESSED_FOLDER1, "processed_video.mp4")
+    fixed_video_path = os.path.join(PROCESSED_FOLDER1, "processed_fixed.mp4")
+
+    if os.path.exists(original_video_path):
+        # Re-encode using ffmpeg
+        try:
+            subprocess.run([
+                'ffmpeg', '-y',  # -y to overwrite if exists
+                '-i', original_video_path,
+                '-vcodec', 'libx264',
+                '-acodec', 'aac',
+                fixed_video_path
+            ], check=True)
+        except subprocess.CalledProcessError as e:
+            return {"error": f"ffmpeg failed: {e}"}, 500
+
+        return send_file(fixed_video_path, mimetype="video/mp4", conditional=True)
+    else:
+        return {"error": "Processed video not found"}, 404
 
 filtered_detections = []
 
@@ -426,7 +450,8 @@ def handle_video(data):
 
         socketio.emit("video_process_complete", {
             "message": "Video processing complete!",
-            "detections": filtered
+            "detections": filtered,
+            "url" : "/download_video"
         })
 
     except Exception as e:
@@ -437,6 +462,11 @@ def process_video(video_path):
     global filtered_detections
     filtered_detections = []
 
+    blur_pixelate_classes = ['alcohol_bottlerotation', 'cigarette', 'smoking']
+    pixelate_only_classes = ['blood', 'License_Plate', 'Violent']
+
+    
+    output_path = "./Censored_video/processed_video.mp4"
     cap = cv2.VideoCapture(video_path)
 
     if not cap.isOpened():
@@ -444,9 +474,12 @@ def process_video(video_path):
         return []
 
     fps = cap.get(cv2.CAP_PROP_FPS)
-    frame_interval = max(1, int(fps / 10))  # Process at 10 FPS
+    frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
 
-    print(f"Processing at 10 FPS, skipping every {frame_interval} frames")
+    print("🔄 Processing video...")
 
     frame_count = 0
 
@@ -455,51 +488,108 @@ def process_video(video_path):
         if not ret:
             break
 
-        if frame_count % frame_interval != 0:
-            frame_count += 1
-            continue
+        original_frame = frame.copy()
+        resized_frame = cv2.resize(frame, (640, 640))  # For detection
 
-        resized_frame = cv2.resize(frame, (640, 640))
+        detections_this_frame = []
 
         for model_name, model in models.items():
             results = model.predict(source=resized_frame, conf=0.3)
 
             for result in results:
-                if len(result.boxes) > 0:
-                    timestamp_seconds = frame_count / fps
-                    timestamp_milliseconds = int((timestamp_seconds - int(timestamp_seconds)) * 1000)
-            
-                    # Proper timestamp formatting with milliseconds
-                    timestamp = time.strftime('%H:%M:%S', time.gmtime(int(timestamp_seconds)))
-                    timestamp_with_ms = f"{timestamp}.{timestamp_milliseconds:03d}"
-                    for box in result.boxes.xyxy:
-                        x1, y1, x2, y2 = map(int, box.cpu().numpy())
-                        class_id = int(result.boxes.cls[0].item())
-                        class_name = model.names.get(class_id, "Unknown")
+                timestamp_seconds = frame_count / fps
+                timestamp = time.strftime('%H:%M:%S', time.gmtime(timestamp_seconds))
+                milliseconds = int((timestamp_seconds % 1) * 1000)
+                timestamp_with_ms = f"{timestamp}.{milliseconds:03d}"
 
-                        detection = {
-                            "model": model_name,
-                            "timestamp": timestamp_with_ms,
-                            "class": class_name,
-                            "x1": x1,
-                            "y1": y1,
-                            "x2": x2,
-                            "y2": y2
-                        }
+                for i, box in enumerate(result.boxes.xyxy):
+                    x1, y1, x2, y2 = map(int, box.cpu().numpy())
+                    class_id = int(result.boxes.cls[i].item())
+                    class_name = model.names.get(class_id, "Unknown")
 
-                        # Filter only the required classes
-                        if (
-                            detection["class"] in ['blood', 'alcohol_bottlerotation', 'cigarette','smoking','Violent']
-                        ):
-                            filtered_detections.append(detection)
+                    detection = {
+                        "model": model_name,
+                        "timestamp": timestamp_with_ms,
+                        "class": class_name,
+                        "x1": x1,
+                        "y1": y1,
+                        "x2": x2,
+                        "y2": y2
+                    }
 
+                    if class_name in blur_pixelate_classes + pixelate_only_classes:
+                        filtered_detections.append(detection)
+                        detections_this_frame.append((x1, y1, x2, y2, class_name))
+
+        # Apply pixelation/blur to original frame
+        for x1, y1, x2, y2, cls in detections_this_frame:
+            x1, y1 = max(0, x1), max(0, y1)
+            x2, y2 = min(frame_width, x2), min(frame_height, y2)
+
+            if x2 <= x1 or y2 <= y1:
+                continue
+
+            region = original_frame[y1:y2, x1:x2]
+            if region.size == 0:
+                continue
+
+            # Case 1: Smoke — show warning only
+            if cls == 'smoking' or cls == 'cigarette':
+                cv2.putText(
+                    original_frame,
+                    "Smoking is injurious to health",
+                    (x1, min(y2 + 30, frame_height - 10)),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.7,
+                    (0, 0, 255),
+                    2
+                )
+                print(f"{cls} detected at {timestamp_with_ms} → Warning shown")
+                continue
+
+            # Case 2: Alcohol — show double warning
+            if cls == 'alcohol_bottlerotation':
+                warnings = [
+                    "Don't drink Alcohol",
+                    "Don't drink and drive"
+                ]
+                for idx, warning in enumerate(warnings):
+                    y_offset = min(y2 + 30 + (idx * 25), frame_height - 10)
+                    cv2.putText(
+                        original_frame,
+                        warning,
+                        (x1, y_offset),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.7,
+                        (0, 0, 255),
+                        2
+                    )
+                print(f"🍺 {cls} detected at {timestamp_with_ms} → Warnings shown")
+                continue
+
+            # Case 3: Apply strong pixelation
+
+            strong_pixel_size = 4  # lower = more pixelated
+            temp = cv2.resize(region, (strong_pixel_size, strong_pixel_size), interpolation=cv2.INTER_LINEAR)
+            pixelated = cv2.resize(temp, (x2 - x1, y2 - y1), interpolation=cv2.INTER_NEAREST)
+
+            # Optional blur
+            if cls in blur_pixelate_classes:
+                pixelated = cv2.GaussianBlur(pixelated, (9, 9), 0)
+
+            original_frame[y1:y2, x1:x2] = pixelated
+            print(f"🎯 {cls} detected at {timestamp_with_ms} → Effect applied at ({x1},{y1},{x2},{y2})")
+
+        out.write(original_frame)
         frame_count += 1
 
     cap.release()
+    out.release()
     cv2.destroyAllWindows()
 
     # Return filtered detections
     print(filtered_detections)
+    #socketio.emit("process_complete", {"message": "Processing complete!","url": "/download_audio"}) 
     return filtered_detections
 
 def extract_audio(video_path, output_audio_path):
