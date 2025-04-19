@@ -28,6 +28,7 @@ Extracted_Audio/
 Video_model/Inputs/
 Video_model/Outputs/
 Video_model/Yolo_models/
+demo.mp4
 
 # Ignore compiled files
 *.so
