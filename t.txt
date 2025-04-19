@@ -32,3 +32,7 @@ Translated audio to tamil texts successfully
  லூசு loosu
  மாதிரி maadhiri
  இருக்கா, irukkaa,
+
+
+
+ffmpeg -i ./Censored_video/processed_fixed.mp4 -i ./Censored_audio/audio_censored.mp3 -c:v copy -c:a aac -strict experimental ./Censored_video/output.mp4

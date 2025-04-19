@@ -430,6 +430,65 @@ def download_video():
     else:
         return {"error": "Processed video not found"}, 404
 
+import subprocess
+import os
+from flask import send_file
+
+@app.route("/download_audio_video")
+def download_audio_video():
+    original_video_path = os.path.join(PROCESSED_FOLDER1, "processed_video.mp4")
+    fixed_video_path = os.path.join(PROCESSED_FOLDER1, "processed_fixed.mp4")
+    audio_path = os.path.join(PROCESSED_FOLDER, "audio_censored.mp3")  # Assuming the audio file is in the same folder
+    output_video_path = os.path.join(PROCESSED_FOLDER1, "output.mp4")  # Final merged output video path
+
+    if os.path.exists(original_video_path):
+        # Re-encode the original video first
+        try:
+            result = subprocess.run([
+                'ffmpeg', '-y',  # -y to overwrite if exists
+                '-i', original_video_path,
+                '-vcodec', 'libx264',  # Video codec
+                '-acodec', 'aac',      # Audio codec
+                fixed_video_path       # Output path for the fixed video
+            ], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+            # Log the output and error of the FFmpeg command
+            print(f"FFmpeg re-encoding output: {result.stdout.decode()}")
+            print(f"FFmpeg re-encoding error: {result.stderr.decode()}")
+        except subprocess.CalledProcessError as e:
+            return {"error": f"ffmpeg failed during re-encoding: {e}, {e.stderr}"}, 500
+
+        # Now merge the re-encoded video and audio
+        try:
+            result = subprocess.run([
+                'ffmpeg', '-y',  # -y to overwrite if exists
+                '-i', fixed_video_path,      # Input the re-encoded video
+                '-i', audio_path,            # Input the audio file
+                '-c:v', 'copy',              # Copy video codec (no re-encoding)
+                '-c:a', 'aac',               # Audio codec to AAC
+                '-strict', 'experimental',   # Allow experimental codecs (needed for AAC)
+                '-shortest',                 # Ensure the shortest stream is used
+                output_video_path            # Final output path
+            ], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+            # Log the output and error of the FFmpeg command
+            print(f"FFmpeg merge output: {result.stdout.decode()}")
+            print(f"FFmpeg merge error: {result.stderr.decode()}")
+
+        except subprocess.CalledProcessError as e:
+            return {"error": f"ffmpeg failed during merging: {e}, {e.stderr}"}, 500
+
+        # Check if the output video was created successfully
+        if os.path.exists(output_video_path):
+            return send_file(output_video_path, mimetype="video/mp4", conditional=True)
+        else:
+            return {"error": "Output video was not created"}, 500
+    else:
+        return {"error": "Processed video not found"}, 404
+
+
+
+
 filtered_detections = []
 
 @socketio.on("upload_video_file")
@@ -642,12 +701,12 @@ def handle_audio_video(data):
     input_audio_path = "uploads/audio.mp3"
     
     clean_audio = preprocess_audio(input_audio_path)
-    socketio.emit("progress_update", {"message": f"Audio Cleaned successfully"})
+    socketio.emit("progress_update1", {"message": f"Audio Cleaned successfully"})
 
     result = transcribe_audio(clean_audio)
-    socketio.emit("progress_update", {"message": f"Audio to tamil texts converted successfully"})
-    socketio.emit("progress_update", {"message": f"Converted tamil to tanglish text successfully"})
-    socketio.emit("progress_update", {"message": f"Censoring process"})
+    socketio.emit("progress_update1", {"message": f"Audio to tamil texts converted successfully"})
+    socketio.emit("progress_update1", {"message": f"Converted tamil to tanglish text successfully"})
+    socketio.emit("progress_update1", {"message": f"Censoring process"})
     print(result)
     tan_texts = []
     timestamps = []
@@ -703,16 +762,43 @@ def handle_audio_video(data):
     print("Timestamps: ",t_stamps)
     if(len(hate) == 0):
         print("No hate speech detected")
-        socketio.emit("progress_update", {"message": f"No hate speech found..No Censors done"})
-        socketio.emit("process_complete", {"message": "Processing complete!","url":"nothing"}) 
+
+        output_audio_path = "./Censored_audio/audio_censored.mp3"
+
+        try:
+            subprocess.run([
+                'ffmpeg', '-y',  # overwrite if exists
+                '-i', input_audio_path,
+                '-vn',            # no video
+                '-acodec', 'libmp3lame',
+                output_audio_path
+            ], check=True)
+        
+        except subprocess.CalledProcessError as e:
+            print(f"Error extracting audio: {e}")
+            socketio.emit("process_complete1", {"message": "Audio extraction failed!", "url": "error"})
+            return
+
+        socketio.emit("progress_update1", {"message": f"No hate speech found..No Censors done"})
+        socketio.emit("process_complete1", {"message": "Processing complete!","url":"nothing"}) 
     else:
         print("Hate speech detected")
 
         beep(input_audio_path,t_stamps)
-        socketio.emit("progress_update", {"message": f"Censoring done successfully"})
+        socketio.emit("progress_update1", {"message": f"Censoring done successfully"})
         
         processed_audio_path = os.path.join(PROCESSED_FOLDER,"audio_censored.mp3")
-        socketio.emit("process_complete", {"message": "Processing complete!","url": "/download_audio"}) 
+        socketio.emit("process_complete1", {"message": "Processing complete!","url": "/download_audio"})
+
+    filtered = process_video(video_path)
+    output_path1 = "./Censored_video/processed_video.mp4"
+    output_path2 = "./Censored_audio/audio_censored.mp3"
+
+    socketio.emit("video_process_complete1", {
+        "message": "Audio Video processing complete!",
+        "detections": filtered,
+        "url" : "/download_audio_video"
+    })
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, port=5000)

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
 import { useNavigate } from 'react-router-dom';
+import {Puff} from 'react-loading-icons'
 
 const socket = io('http://127.0.0.1:5000');
 
@@ -12,6 +13,7 @@ const VideoUploader = () => {
     const [detections, setDetections] = useState([]);
     const [downloadUrl,setDownloadUrl] = useState("")
     const [comp,setComp] = useState(false)
+    const [load,setLoad] = useState(false)
     const navigate = useNavigate()
 
     useEffect(() => {
@@ -19,6 +21,7 @@ const VideoUploader = () => {
             setProgress((prev) => [...prev, data.message]);
             setDetections(data.detections);
             setDownloadUrl(data.url)
+            setLoad(false)
             setComp(true)
         });
 
@@ -46,13 +49,32 @@ const VideoUploader = () => {
 
         setProgress([]);
         setDetections([]);
+        setLoad(true)
 
         const reader = new FileReader();
         reader.readAsArrayBuffer(video);
         reader.onload = () => {
             socket.emit('upload_video_file', { video: reader.result });
         };
+
+        alert("Video Uploaded Successfully")
+
     };
+
+    const overlayStyle = {
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        backdropFilter: 'blur(5px)',
+        backgroundColor: 'rgba(0, 0, 0, 0.2)',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 9999
+    };
+
 
     return (
         <div className='container'>
@@ -77,6 +99,15 @@ const VideoUploader = () => {
                     </button>
                 </div>
             )}
+
+            
+            {load && (
+                <div style={overlayStyle}>
+                    <Puff stroke="#98ff98" />
+                </div>
+                
+            )}
+
 
             {progress.map((msg, index) => (
                 <p key={index} className='message'>{msg}</p>
